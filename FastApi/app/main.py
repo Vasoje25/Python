@@ -10,12 +10,11 @@ from .database import engine, get_db
 from sqlalchemy.orm import Session
 
 
-#creating all models
+# creating all models
 models.Base.metadata.create_all(bind=engine)
 
 
 app = FastAPI()
-
 
 
 # creating class and testing fields in same time
@@ -75,7 +74,7 @@ async def root():
 @app.get("/sqlalchemy")
 def get_tests(db: Session = Depends(get_db)):
 
-    posts= db.query(models.Post).all()
+    posts = db.query(models.Post).all()
     return {"data": posts}
 
 
@@ -84,7 +83,7 @@ def get_tests(db: Session = Depends(get_db)):
 def get_posts(db: Session = Depends(get_db)):
     # cursor.execute("""SELECT * FROM posts;""")
     # posts = cursor.fetchall()
-    posts= db.query(models.Post).all()
+    posts = db.query(models.Post).all()
     return {"data": posts}
 
 
@@ -93,12 +92,6 @@ def get_posts(db: Session = Depends(get_db)):
 # title str, content str
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_posts(post: Post, db: Session = Depends(get_db)):
-    # cursor.execute(
-    #     """INSERT INTO posts (title, content, published) 
-    #                VALUES (%s, %s, %s) RETURNING *; """,
-    #     (post.title, post.content, post.published),
-    # )
-    # new_post = cursor.fetchone()
 
     # # commiting changes into table
     # conn.commit()
@@ -108,14 +101,6 @@ def create_posts(post: Post, db: Session = Depends(get_db)):
     db.refresh(new_post)
 
     return {"data": new_post}
-
-
-# # app.get for getting data from host /posts
-# @app.get("/posts/latest")
-# def get_post():
-#     cursor.execute("""SELECT * FROM posts ORDER BY created_at DESC;""")
-#     posts = cursor.fetchone()
-#     return {"data": posts}
 
 
 # function for geting single post
@@ -148,7 +133,8 @@ def delete_post(id: int, db: Session = Depends(get_db)):
     if post.first() == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"post with that id {id} does not exist")    
+            detail=f"post with that id {id} does not exist",
+        )
 
     post.delete(synchronize_session=False)
     db.commit()
@@ -159,28 +145,19 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 # updateing post
 # getting all data from the front end
 @app.put("/posts/{id}")
-def update_post(id: int, updated_post : Post, db: Session = Depends(get_db)):
+def update_post(id: int, post: Post, db: Session = Depends(get_db)):
 
-    # cursor.execute(
-    #     """UPDATE posts SET title = %s, content= %s, published=%s WHERE id= %s RETURNING *; """,
-    #     (post.title, post.content, post.published, str(id)),
-    # )
-
-    # updated_post = cursor.fetchone()
-    # conn.commit()
-  
     post_querry = db.query(models.Post).filter(models.Post.id == id)
-
-    post= post_querry.first()
+    post = post_querry.first()
 
     # making sure that error dont occure if there is no required ID
-    if post== None:
+    if post == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"post with that id {id} does not exist",
         )
-    #zasto prosledjuje post_querry a ne posts  
-    post_querry.update(updated_post.model_dump() , synchronize_session=False)
+
+    post_querry.update(post.model_dump(), synchronize_session=False)
     db.commit()
 
     return {"data": post_querry.first()}
@@ -191,13 +168,13 @@ def update_post(id: int, updated_post : Post, db: Session = Depends(get_db)):
 @app.patch("/posts/{id}")
 def update_post_patch(id: int, post: Post):
 
-    # cursor.execute(
-    #     """UPDATE posts SET title = %s, content= %s, published=%s WHERE id= %s RETURNING *; """,
-    #     (post.title, post.content, post.published, str(id)),
-    # )
+    cursor.execute(
+        """UPDATE posts SET title = %s, content= %s, published=%s WHERE id= %s RETURNING *; """,
+        (post.title, post.content, post.published, str(id)),
+    )
 
-    # patch_updated_post = cursor.fetchone()
-    # conn.commit()
+    patch_updated_post = cursor.fetchone()
+    conn.commit()
 
     # making sure that error dont occure if there is no required ID
     if post == None:
@@ -207,4 +184,3 @@ def update_post_patch(id: int, post: Post):
         )
 
     return {"data": patch_updated_post}
-

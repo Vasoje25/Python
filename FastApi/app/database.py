@@ -2,6 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+
 #creating connection with base
 SQLALCHEMY_DATABASE_URL = 'postgresql://postgres:pgadmin4@localhost/fastapi'
 
