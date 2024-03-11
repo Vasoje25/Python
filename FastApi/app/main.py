@@ -170,7 +170,7 @@ def update_post(id: int, post: Post, db: Session = Depends(get_db)):
 # updateing post over patch
 # getting all data from the front end
 @app.patch("/posts/{id}")
-def update_post_patch(id: int, post_patch: PatchPost, db: Session= Depends(get_db)):
+def update_post_patch(id: int, post_patch: PatchPost, db: Session = Depends(get_db)):
 
     post_query = db.query(models.Post).filter(models.Post.id == id)
     post = post_query.first()
@@ -181,7 +181,7 @@ def update_post_patch(id: int, post_patch: PatchPost, db: Session= Depends(get_d
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"post with that id {id} does not exist",
         )
-    
+
     post_query.update(post_patch.model_dump(), synchronize_session=False)
     db.commit()
     db.refresh(post)

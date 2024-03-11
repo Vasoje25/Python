@@ -3,8 +3,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 
-#creating connection with base
-SQLALCHEMY_DATABASE_URL = 'postgresql://postgres:pgadmin4@localhost/fastapi'
+# creating connection with base
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres:pgadmin4@localhost/fastapi"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
@@ -13,13 +13,11 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-#code library required to run the script's source code that it was imported for
-#Going to create a session towards database for every request
+# code library required to run the script's source code that it was imported for
+# Going to create a session towards database for every request
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-
-
