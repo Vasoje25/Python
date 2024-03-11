@@ -25,6 +25,10 @@ class Post(BaseModel):
     published: bool = True
 
 
+class PatchPost(BaseModel):
+    title: str
+
+
 # connection with database
 try:
     conn = psycopg2.connect(
@@ -147,8 +151,8 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 @app.put("/posts/{id}")
 def update_post(id: int, post: Post, db: Session = Depends(get_db)):
 
-    post_querry = db.query(models.Post).filter(models.Post.id == id)
-    post = post_querry.first()
+    post_query = db.query(models.Post).filter(models.Post.id == id)
+    post = post_query.first()
 
     # making sure that error dont occure if there is no required ID
     if post == None:
@@ -157,24 +161,19 @@ def update_post(id: int, post: Post, db: Session = Depends(get_db)):
             detail=f"post with that id {id} does not exist",
         )
 
-    post_querry.update(post.model_dump(), synchronize_session=False)
+    post_query.update(post.model_dump(), synchronize_session=False)
     db.commit()
 
-    return {"data": post_querry.first()}
+    return {"data": post_query.first()}
 
 
 # updateing post over patch
 # getting all data from the front end
 @app.patch("/posts/{id}")
-def update_post_patch(id: int, post: Post):
+def update_post_patch(id: int, post_patch: PatchPost, db: Session= Depends(get_db)):
 
-    cursor.execute(
-        """UPDATE posts SET title = %s, content= %s, published=%s WHERE id= %s RETURNING *; """,
-        (post.title, post.content, post.published, str(id)),
-    )
-
-    patch_updated_post = cursor.fetchone()
-    conn.commit()
+    post_query = db.query(models.Post).filter(models.Post.id == id)
+    post = post_query.first()
 
     # making sure that error dont occure if there is no required ID
     if post == None:
@@ -182,5 +181,8 @@ def update_post_patch(id: int, post: Post):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"post with that id {id} does not exist",
         )
-
-    return {"data": patch_updated_post}
+    
+    post_query.update(post_patch.model_dump(), synchronize_session=False)
+    db.commit()
+    db.refresh(post)
+    return {"data": post}
