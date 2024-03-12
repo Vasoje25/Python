@@ -1,32 +1,22 @@
 # imoprting library
-from typing import Optional
+from typing import Optional, List
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.params import Body
 from pydantic import BaseModel
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from . import models
+from . import models, schemas, utils
 from .database import engine, get_db
 from sqlalchemy.orm import Session
+from datetime import datetime 
 
 
 # creating all models
 models.Base.metadata.create_all(bind=engine)
 
 
+#defaine main word for FastAPI
 app = FastAPI()
-
-
-# creating class and testing fields in same time
-# testing existance and type of fiels
-class Post(BaseModel):
-    title: str
-    content: str
-    published: bool = True
-
-
-class PatchPost(BaseModel):
-    title: str
 
 
 # connection with database
@@ -74,28 +64,20 @@ async def root():
     return {"message": "Hello my api World!"}
 
 
-# Test gitting data from database over library
-@app.get("/sqlalchemy")
-def get_tests(db: Session = Depends(get_db)):
-
-    posts = db.query(models.Post).all()
-    return {"data": posts}
-
-
 # app.get for getting data from host /posts
-@app.get("/posts")
+@app.get("/posts", response_model= List[schemas.PostResponse])
 def get_posts(db: Session = Depends(get_db)):
     # cursor.execute("""SELECT * FROM posts;""")
     # posts = cursor.fetchall()
     posts = db.query(models.Post).all()
-    return {"data": posts}
+    return posts
 
 
 # creating post and sending data
 # creating body and calling class
 # title str, content str
-@app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_posts(post: Post, db: Session = Depends(get_db)):
+@app.post("/posts", status_code=status.HTTP_201_CREATED, response_model= schemas.PostResponse)
+def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
 
     # # commiting changes into table
     # conn.commit()
@@ -104,15 +86,31 @@ def create_posts(post: Post, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_post)
 
-    return {"data": new_post}
+    return new_post
+
+
+#get latest post
+@app.get("/posts/latest", response_model=schemas.PostResponse)
+def latest_post(db: Session = Depends(get_db)):
+
+    post_query = db.query(models.Post).order_by(models.Post.id.desc()).first()
+
+    if post_query == None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="there is no any posts!"
+        )
+
+    return post_query
 
 
 # function for geting single post
 # getting ID of type and coverting it to int
 # since we are getting STR type
-@app.get("/posts/{id}")
+@app.get('/posts/{id}')
 def get_post(id: int, db: Session = Depends(get_db)):
 
+    #id_post = db.query(models.Post.title.__dict__).filter(models.Post.id == id).first()
     id_post = db.query(models.Post).filter(models.Post.id == id).first()
 
     # Error chache if there is no post with specific ID
@@ -124,23 +122,24 @@ def get_post(id: int, db: Session = Depends(get_db)):
         # 2nd way of showing error code
         # response.status_code = status.HTTP_404_NOT_FOUND
         # return {"message": f"Post with {id} was not found."}
-
-    return {"post_detail": id_post}
+    print(id_post)
+    return id_post
 
 
 # deleting a post
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int, db: Session = Depends(get_db)):
 
-    post = db.query(models.Post).filter(models.Post.id == id)
+    post_query = db.query(models.Post).filter(models.Post.id == id)
+    post_delete = post_query.first()
 
-    if post.first() == None:
+    if post_delete == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"post with that id {id} does not exist",
         )
 
-    post.delete(synchronize_session=False)
+    post_query.delete(synchronize_session=False)
     db.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -148,14 +147,14 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 
 # updateing post
 # getting all data from the front end
-@app.put("/posts/{id}")
-def update_post(id: int, post: Post, db: Session = Depends(get_db)):
+@app.put("/posts/{id}", response_model= schemas.PostResponse)
+def update_post(id: int, post: schemas.PostCreate, db: Session = Depends(get_db)):
 
     post_query = db.query(models.Post).filter(models.Post.id == id)
-    post = post_query.first()
+    post_update = post_query.first()
 
     # making sure that error dont occure if there is no required ID
-    if post == None:
+    if post_update == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"post with that id {id} does not exist",
@@ -164,25 +163,57 @@ def update_post(id: int, post: Post, db: Session = Depends(get_db)):
     post_query.update(post.model_dump(), synchronize_session=False)
     db.commit()
 
-    return {"data": post_query.first()}
+    return post_query.first()
 
 
 # updateing post over patch
 # getting all data from the front end
-@app.patch("/posts/{id}")
-def update_post_patch(id: int, post_patch: PatchPost, db: Session = Depends(get_db)):
+@app.patch("/posts/{id}", response_model= schemas.PostResponse)
+def update_post_patch(id: int, post_patch: schemas.PostCreate, db: Session = Depends(get_db)):
 
     post_query = db.query(models.Post).filter(models.Post.id == id)
-    post = post_query.first()
+    patch_post = post_query.first()
 
     # making sure that error dont occure if there is no required ID
-    if post == None:
+    if patch_post == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"post with that id {id} does not exist",
         )
 
     post_query.update(post_patch.model_dump(), synchronize_session=False)
+
     db.commit()
-    db.refresh(post)
-    return {"data": post}
+    db.refresh(patch_post)
+
+    return patch_post
+
+
+#creating a new user
+@app.post("/users", status_code= status.HTTP_201_CREATED, response_model= schemas.UserOut)
+def create_user(user :schemas.UserCreate ,db: Session= Depends(get_db)):
+
+    #hash the password - user.password
+    hashed_password = utils.hash(user.password)
+    user.password = hashed_password
+
+    new_user = models.User(**user.model_dump())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return new_user 
+
+
+@app.get("/users/{id}")
+def get_user(id: int, db: Session = Depends(get_db), response_model=schemas.UserOut):
+    
+    user = db.query(models.User).filter(models.User.id == id).first()
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"User with id: {id} does not exist")
+    
+    return user
+
+
