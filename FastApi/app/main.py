@@ -2,14 +2,14 @@
 from typing import Optional, List
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.params import Body
+from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from . import models, schemas, utils
-from .database import engine, get_db
-from sqlalchemy.orm import Session
 from datetime import datetime 
-from .routers import post, user
+from .database import engine, get_db
+from .routers import post, user, auth
+from . import models, schemas, utils
 
 
 # creating all models
@@ -59,6 +59,7 @@ def find_index_post(id):
 
 app.include_router(post.router)
 app.include_router(user.router)
+app.include_router(auth.router)
 
 
 # creating a live app over:  uvicorn main:app
@@ -69,7 +70,7 @@ async def root():
     return {"message": "Hello my api World!"}
 
 
-
+#TODO Relationships 7:45
 
 
 

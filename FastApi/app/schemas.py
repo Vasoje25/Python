@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime 
+from typing import Optional
 
 
 # creating class and testing fields in same time
@@ -19,7 +20,7 @@ class PostResponse(PostBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attribute = True
 
 
 class UserCreate(BaseModel):
@@ -33,3 +34,17 @@ class UserOut(BaseModel):
 
     class Config:
         orm_model = True
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class Token(BaseModel):
+    access_token  : str
+    token_type: str
+
+class TokenData(BaseModel):
+    id: Optional[int] = None
+

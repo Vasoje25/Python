@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 from typing import List
-from .. import models, schemas
+from .. import models, schemas, oauth2
 from ..database import get_db
 
 
@@ -13,7 +13,7 @@ router= APIRouter(
 
 # app.get for getting data from host /posts
 @router.get("/", response_model= List[schemas.PostResponse])
-def get_posts(db: Session = Depends(get_db)):
+def get_posts(db: Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user)):
     # cursor.execute("""SELECT * FROM posts;""")
     # posts = cursor.fetchall()
     posts = db.query(models.Post).all()
@@ -24,10 +24,12 @@ def get_posts(db: Session = Depends(get_db)):
 # creating body and calling class
 # title str, content str
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model= schemas.PostResponse)
-def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
+def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user)):
 
     # # commiting changes into table
     # conn.commit()
+
+    print(current_user.email)
     new_post = models.Post(**post.model_dump())
     db.add(new_post)
     db.commit()
@@ -38,7 +40,7 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
 
 #get latest post
 @router.get("/latest", response_model=schemas.PostResponse)
-def latest_post(db: Session = Depends(get_db)):
+def latest_post(db: Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user)):
 
     post_query = db.query(models.Post).order_by(models.Post.id.desc()).first()
 
@@ -55,7 +57,7 @@ def latest_post(db: Session = Depends(get_db)):
 # getting ID of type and coverting it to int
 # since we are getting STR type
 @router.get('/{id}')
-def get_post(id: int, db: Session = Depends(get_db)):
+def get_post(id: int, db: Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user)):
 
     #id_post = db.query(models.Post.title.__dict__).filter(models.Post.id == id).first()
     id_post = db.query(models.Post).filter(models.Post.id == id).first()
@@ -75,7 +77,7 @@ def get_post(id: int, db: Session = Depends(get_db)):
 
 # deleting a post
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int, db: Session = Depends(get_db)):
+def delete_post(id: int, db: Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user)):
 
     post_query = db.query(models.Post).filter(models.Post.id == id)
     post_delete = post_query.first()
@@ -95,7 +97,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 # updateing post
 # getting all data from the front end
 @router.put("/{id}", response_model= schemas.PostResponse)
-def update_post(id: int, post: schemas.PostCreate, db: Session = Depends(get_db)):
+def update_post(id: int, post: schemas.PostCreate, db: Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user)):
 
     post_query = db.query(models.Post).filter(models.Post.id == id)
     post_update = post_query.first()
@@ -116,7 +118,7 @@ def update_post(id: int, post: schemas.PostCreate, db: Session = Depends(get_db)
 # updateing post over patch
 # getting all data from the front end
 @router.patch("/{id}", response_model= schemas.PostResponse)
-def update_post_patch(id: int, post_patch: schemas.PostCreate, db: Session = Depends(get_db)):
+def update_post_patch(id: int, post_patch: schemas.PostCreate, db: Session = Depends(get_db), current_user : int = Depends(oauth2.get_current_user)):
 
     post_query = db.query(models.Post).filter(models.Post.id == id)
     patch_post = post_query.first()
