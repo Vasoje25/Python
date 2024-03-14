@@ -28,6 +28,7 @@ MANIFEST
 app/__init__.py
 app/__pycache__
 __pycache__
+.env
 
 
 # PyInstaller
