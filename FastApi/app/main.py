@@ -1,32 +1,23 @@
 # imoprting library
-from typing import Optional
+from typing import Optional, List
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.params import Body
+from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from . import models
+from datetime import datetime 
 from .database import engine, get_db
-from sqlalchemy.orm import Session
+from .routers import post, user, auth
+from . import models, schemas, utils
 
 
 # creating all models
 models.Base.metadata.create_all(bind=engine)
 
 
+#defaine main word for FastAPI
 app = FastAPI()
-
-
-# creating class and testing fields in same time
-# testing existance and type of fiels
-class Post(BaseModel):
-    title: str
-    content: str
-    published: bool = True
-
-
-class PatchPost(BaseModel):
-    title: str
 
 
 # connection with database
@@ -66,6 +57,11 @@ def find_index_post(id):
             return i
 
 
+app.include_router(post.router)
+app.include_router(user.router)
+app.include_router(auth.router)
+
+
 # creating a live app over:  uvicorn main:app
 # ("/") is root path goes after domain
 # request Get method from root (url) "/"
@@ -74,115 +70,9 @@ async def root():
     return {"message": "Hello my api World!"}
 
 
-# Test gitting data from database over library
-@app.get("/sqlalchemy")
-def get_tests(db: Session = Depends(get_db)):
-
-    posts = db.query(models.Post).all()
-    return {"data": posts}
+#TODO Relationships 7:45
 
 
-# app.get for getting data from host /posts
-@app.get("/posts")
-def get_posts(db: Session = Depends(get_db)):
-    # cursor.execute("""SELECT * FROM posts;""")
-    # posts = cursor.fetchall()
-    posts = db.query(models.Post).all()
-    return {"data": posts}
 
 
-# creating post and sending data
-# creating body and calling class
-# title str, content str
-@app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_posts(post: Post, db: Session = Depends(get_db)):
 
-    # # commiting changes into table
-    # conn.commit()
-    new_post = models.Post(**post.model_dump())
-    db.add(new_post)
-    db.commit()
-    db.refresh(new_post)
-
-    return {"data": new_post}
-
-
-# function for geting single post
-# getting ID of type and coverting it to int
-# since we are getting STR type
-@app.get("/posts/{id}")
-def get_post(id: int, db: Session = Depends(get_db)):
-
-    id_post = db.query(models.Post).filter(models.Post.id == id).first()
-
-    # Error chache if there is no post with specific ID
-    if not id_post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"post with id: {id} was not found",
-        )
-        # 2nd way of showing error code
-        # response.status_code = status.HTTP_404_NOT_FOUND
-        # return {"message": f"Post with {id} was not found."}
-
-    return {"post_detail": id_post}
-
-
-# deleting a post
-@app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int, db: Session = Depends(get_db)):
-
-    post = db.query(models.Post).filter(models.Post.id == id)
-
-    if post.first() == None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"post with that id {id} does not exist",
-        )
-
-    post.delete(synchronize_session=False)
-    db.commit()
-
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-# updateing post
-# getting all data from the front end
-@app.put("/posts/{id}")
-def update_post(id: int, post: Post, db: Session = Depends(get_db)):
-
-    post_query = db.query(models.Post).filter(models.Post.id == id)
-    post = post_query.first()
-
-    # making sure that error dont occure if there is no required ID
-    if post == None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"post with that id {id} does not exist",
-        )
-
-    post_query.update(post.model_dump(), synchronize_session=False)
-    db.commit()
-
-    return {"data": post_query.first()}
-
-
-# updateing post over patch
-# getting all data from the front end
-@app.patch("/posts/{id}")
-def update_post_patch(id: int, post_patch: PatchPost, db: Session = Depends(get_db)):
-
-    post_query = db.query(models.Post).filter(models.Post.id == id)
-    post = post_query.first()
-
-    # making sure that error dont occure if there is no required ID
-    if post == None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"post with that id {id} does not exist",
-        )
-
-    post_query.update(post_patch.model_dump(), synchronize_session=False)
-    db.commit()
-    db.refresh(post)
-    return {"data": post}
