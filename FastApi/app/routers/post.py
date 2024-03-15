@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 from typing import List, Optional
+
+from sqlalchemy import func
 from .. import models, schemas, oauth2
 from ..database import get_db
 
@@ -9,7 +11,8 @@ router = APIRouter(prefix="/posts", tags=["Posts"])
 
 
 # app.get for getting data from host /posts
-@router.get("/", response_model=List[schemas.PostResponse])
+@router.get("/", response_model=List[schemas.PostOut])
+#@router.get("/")
 def get_posts(
     db: Session = Depends(get_db),
     current_user: int = Depends(oauth2.get_current_user),
@@ -19,12 +22,12 @@ def get_posts(
 ):
     # cursor.execute("""SELECT * FROM posts;""")
     # posts = cursor.fetchall()
-    posts = (
-        db.query(models.Post)
-        .filter(models.Post.title.contains(search))
-        .limit(limit)
-        .all()
-    )
+    #posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).all()
+
+    posts = db.query(models.Post,  func.count(models.Vote.post_id).label("votes")).join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).filter(
+        models.Post.title.contains(search)).limit(limit).all()
+
+
     return posts
 
 
@@ -54,12 +57,15 @@ def create_posts(
 
 
 # get latest post
-@router.get("/latest", response_model=schemas.PostResponse)
+@router.get("/latest", response_model=schemas.PostOut)
 def latest_post(
     db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)
 ):
 
-    post_query = db.query(models.Post).order_by(models.Post.id.desc()).first()
+    #post_query = db.query(models.Post).order_by(models.Post.id.desc()).first()
+
+    post_query= db.query(models.Post,  func.count(models.Vote.post_id).label("votes")).join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).order_by(
+        models.Post.id.desc()).first()
 
     if post_query == None:
         raise HTTPException(
@@ -72,7 +78,7 @@ def latest_post(
 # function for geting single post
 # getting ID of type and coverting it to int
 # since we are getting STR type
-@router.get("/{id}")
+@router.get("/{id}", response_model=schemas.PostOut)
 def get_post(
     id: int,
     db: Session = Depends(get_db),
@@ -80,7 +86,10 @@ def get_post(
 ):
 
     # id_post = db.query(models.Post.title.__dict__).filter(models.Post.id == id).first()
-    id_post = db.query(models.Post).filter(models.Post.id == id).first()
+    #id_post = db.query(models.Post).filter(models.Post.id == id).first()
+
+    id_post = db.query(models.Post,  func.count(models.Vote.post_id).label("votes")).join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).filter(
+        models.Post.id == id).first()
 
     # Error chache if there is no post with specific ID
     if not id_post:
