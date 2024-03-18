@@ -6,8 +6,8 @@ from .config import settings
 
 print(settings.database_username)
 
-# creating all models
-models.Base.metadata.create_all(bind=engine)
+# creating all models (before alembic)
+# models.Base.metadata.create_all(bind=engine)
 
 
 # defaine main word for FastAPI
