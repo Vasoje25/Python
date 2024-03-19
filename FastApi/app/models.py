@@ -4,7 +4,7 @@ from sqlalchemy.sql.expression import null, text
 from .database import Base
 
 
-# model of our database
+# model of posts database
 class Post(Base):
     __tablename__ = "posts"
 
@@ -22,6 +22,7 @@ class Post(Base):
     owner = relationship("User")
 
 
+# model of users database
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, nullable=False)
@@ -32,6 +33,7 @@ class User(Base):
     )
 
 
+# model of votes database
 class Vote(Base):
     __tablename__="votes"
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, nullable=False)
