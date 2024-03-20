@@ -29,6 +29,8 @@ app/__init__.py
 app/__pycache__
 __pycache__
 .env
+tests/__init__.py
+tests/__pycache__
 
 
 # PyInstaller
