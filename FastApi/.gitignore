@@ -27,6 +27,10 @@ share/python-wheels/
 MANIFEST
 app/__init__.py
 app/__pycache__
+__pycache__
+.env
+tests/__init*
+tests/__pycache__
 
 
 # PyInstaller
