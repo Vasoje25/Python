@@ -36,7 +36,7 @@ def test_detele_vote_non_exist(authorized_client, test_posts):
 
 #test voting not existed post
 def test_vote_post_non_exist(authorized_client, test_posts):
-    res = authorized_client.post("/vote/", json={"post_id": 20000, "dir": 1})
+    res = authorized_client.post("/vote/", json={"post_id": 5, "dir": 1})
     assert res.status_code == 404
 
 
