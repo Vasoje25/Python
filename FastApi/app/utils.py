@@ -3,6 +3,7 @@ from passlib.context import CryptContext
 from fastapi import File, UploadFile, HTTPException, status
 
 
+
 # creating a daefault(what we want to use) algorithm that we want to use (bcrypt)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -18,8 +19,7 @@ def verify(plain_password, hashed_password):
 
 
 #receive and save file
-def file_process(file: File, destination_path: str):
-
+def file_write(file: File, destination_path: str):
     url_folder_path="/static/Images/"
     
     image_name = str(datetime.now(timezone.utc).now()) + '_' +file.filename

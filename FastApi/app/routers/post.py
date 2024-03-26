@@ -47,11 +47,19 @@ def create_posts(
 ):
     print(current_user.id)
     print(current_user.email)
+    
+    url=None
 
     try:
-
         if file:
-            url=utils.file_process(file,image_folder_path)
+            accepted_file_types = ["image/png", "image/jpeg", "image/jpg", "png", "jpeg", "jpg"]
+            file_type= file.content_type
+            print(file_type)
+
+            if file_type not in accepted_file_types:
+                return {"message": "Unsupported media!"}
+            else:
+                url=utils.file_write(file,image_folder_path)
                    
         new_post = models.Post(owner_id=current_user.id, **post.model_dump())
         new_post.image_url = url
