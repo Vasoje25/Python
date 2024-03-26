@@ -4,16 +4,17 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from sqlalchemy import func
-from .. import models, schemas, oauth2
+from .. import models, schemas, oauth2, utils
 from ..database import get_db
 
 
 router = APIRouter(prefix="/posts", tags=["Posts"])
-
-
-#paths
 image_folder_path="/home/dev-222/FOLDAAA/Praksa/Python/FastApi/static/Images/"
-url_folder_path="static/Images/"
+
+
+# #paths
+# image_folder_path="/home/dev-222/FOLDAAA/Praksa/Python/FastApi/static/Images/"
+# url_folder_path="http://127.0.0.1:8000/static/Images/"
 
 
 # app.get for getting data from host /posts
@@ -39,7 +40,7 @@ def get_posts(
     "/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostResponse
 )
 def create_posts(
-    file: UploadFile = File(None),
+    file: UploadFile= File(None),
     post: schemas.PostCreate = Depends(),
     db: Session = Depends(get_db),
     current_user: int = Depends(oauth2.get_current_user),
@@ -47,36 +48,23 @@ def create_posts(
     print(current_user.id)
     print(current_user.email)
 
-    if file:
-        image_name = file.filename
-        try:
-            file_path = f"{image_folder_path}{image_name}"
-            with open(file_path, "wb") as f:
-                f.write(file.file.read())
-                create_url= f"{url_folder_path}{image_name}"
-                print(create_url)
+    try:
 
-            new_post = models.Post(owner_id=current_user.id, **post.model_dump())
-
-            new_post.image_url = create_url
-
-            db.add(new_post)
-            db.commit()
-            db.refresh(new_post)
-
-            return {"message": "File saved successfully"}
-        except Exception as e:
-            return {"message": "greska"}
-    else:
+        if file:
+            url=utils.file_process(file,image_folder_path)
+                   
         new_post = models.Post(owner_id=current_user.id, **post.model_dump())
-        empty_url = ""
-        new_post.image_url = empty_url
+        new_post.image_url = url
 
         db.add(new_post)
         db.commit()
         db.refresh(new_post)
-
-        return {"message": "Post saved"}
+        
+        return new_post
+    except Exception as e:
+        print(e.args)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="post is not created")
 
 
 # get latest post

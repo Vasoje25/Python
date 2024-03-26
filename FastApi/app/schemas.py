@@ -17,6 +17,8 @@ class PostBase(BaseModel):
 class PostCreate(PostBase):
     pass
 
+class Test(PostBase):
+    image_url: Optional[str]
 
 class UserOut(BaseModel):
     id: int
