@@ -13,6 +13,10 @@ class PostBase(BaseModel):
     content: str
     published: bool = True
 
+class PatchBase(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    published: bool = True
 
 class PostCreate(PostBase):
     pass

@@ -20,8 +20,8 @@ def verify(plain_password, hashed_password):
 
 #receive and save file
 def file_write(file: File, destination_path: str):
-    url_folder_path="/static/Images/"
     
+    url_folder_path="/static/Images/"
     image_name = str(datetime.now(timezone.utc).now()) + '_' +file.filename
 
     file_path = f"{destination_path}{image_name}"
@@ -32,3 +32,14 @@ def file_write(file: File, destination_path: str):
 
     return image_location_relative_path
 
+
+#validation of file
+def is_file_type_valid(file: File):
+    accepted_file_types = ["image/png", "image/jpeg", "image/jpg", "png", "jpeg", "jpg"]
+
+    file_type= file.content_type
+
+    if file_type not in accepted_file_types:
+        return False
+    else:
+        return True

@@ -12,11 +12,6 @@ router = APIRouter(prefix="/posts", tags=["Posts"])
 image_folder_path="/home/dev-222/FOLDAAA/Praksa/Python/FastApi/static/Images/"
 
 
-# #paths
-# image_folder_path="/home/dev-222/FOLDAAA/Praksa/Python/FastApi/static/Images/"
-# url_folder_path="http://127.0.0.1:8000/static/Images/"
-
-
 # app.get for getting data from host /posts
 @router.get("/", response_model=List[schemas.PostOut])
 #@router.get("/")
@@ -49,18 +44,16 @@ def create_posts(
     print(current_user.email)
     
     url=None
-
-    try:
-        if file:
-            accepted_file_types = ["image/png", "image/jpeg", "image/jpg", "png", "jpeg", "jpg"]
-            file_type= file.content_type
-            print(file_type)
-
-            if file_type not in accepted_file_types:
-                return {"message": "Unsupported media!"}
-            else:
+    #check if file exist and format of it
+    if file:
+            if utils.is_file_type_valid(file) == True:
                 url=utils.file_write(file,image_folder_path)
-                   
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported media!")
+            
+    #write data in data base
+    try:                   
         new_post = models.Post(owner_id=current_user.id, **post.model_dump())
         new_post.image_url = url
 
@@ -80,8 +73,6 @@ def create_posts(
 def latest_post(
     db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)
 ):
-
-    #post_query = db.query(models.Post).order_by(models.Post.id.desc()).first()
 
     post_query= db.query(models.Post,  func.count(models.Vote.post_id).label("votes")).join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).order_by(
         models.Post.id.desc()).first()
@@ -103,9 +94,6 @@ def get_post(
     db: Session = Depends(get_db),
     current_user: int = Depends(oauth2.get_current_user),
 ):
-
-    # id_post = db.query(models.Post.title.__dict__).filter(models.Post.id == id).first()
-    #id_post = db.query(models.Post).filter(models.Post.id == id).first()
 
     id_post = db.query(models.Post,  func.count(models.Vote.post_id).label("votes")).join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).filter(
         models.Post.id == id).first()
@@ -157,13 +145,23 @@ def delete_post(
 @router.put("/{id}", response_model=schemas.PostResponse)
 def update_post(
     id: int,
-    post: schemas.PostCreate,
+    file: UploadFile = File(None),
+    post: schemas.PostCreate=Depends(),
     db: Session = Depends(get_db),
     current_user: int = Depends(oauth2.get_current_user),
 ):
 
     post_query = db.query(models.Post).filter(models.Post.id == id)
     post_update = post_query.first()
+
+    url=None
+    #check if file exist and format of it
+    if file:
+            if utils.is_file_type_valid(file) == True:
+                url=utils.file_write(file,image_folder_path)
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported media!")
 
     # making sure that error dont occure if there is no required ID
     if post_update == None:
@@ -179,6 +177,7 @@ def update_post(
         )
 
     post_query.update(post.model_dump(), synchronize_session=False)
+    post_update.image_url = url
     db.commit()
 
     return post_query.first()
@@ -189,30 +188,49 @@ def update_post(
 @router.patch("/{id}", response_model=schemas.PostResponse)
 def update_post_patch(
     id: int,
-    post_patch: schemas.PostCreate,
+    file: UploadFile = File(None),
+    post_update: schemas.PatchBase = Depends(),
     db: Session = Depends(get_db),
     current_user: int = Depends(oauth2.get_current_user),
 ):
-
+    
     post_query = db.query(models.Post).filter(models.Post.id == id)
-    patch_post = post_query.first()
+    returned_post = post_query.first()
+
+
+    url=None
+    #check if file exist and format of it
+    if file:
+            if utils.is_file_type_valid(file) == True:
+                url=utils.file_write(file,image_folder_path)
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported media!")
+
 
     # making sure that error dont occure if there is no required ID
-    if patch_post == None:
+    if returned_post == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"post with that id {id} does not exist",
-        )
+            detail=f"post with that id {id} does not exist",)
 
-    if patch_post.owner_id != oauth2.get_current_user.id:
+    if returned_post.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to perform requested action",
-        )
+            detail="Not authorized to perform requested action",)
+    
 
-    post_query.update(post_patch.model_dump(), synchronize_session=False)
+    if post_update.content != None: 
+        returned_post.content = post_update.content  
+
+    if post_update.title != None: 
+        returned_post.title = post_update.title
+
+    if url != None: 
+       returned_post.image_url=url
+  
 
     db.commit()
-    db.refresh(patch_post)
+    db.refresh(returned_post)
 
-    return patch_post
+    return returned_post

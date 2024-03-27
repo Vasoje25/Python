@@ -31,6 +31,7 @@ __pycache__
 .env
 tests/__init*
 tests/__pycache__
+static/Images/*
 
 
 # PyInstaller
