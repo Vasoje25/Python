@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic.types import conint
+from pydantic_core import Url
 
 
 # creating class and testing fields in same time
@@ -12,10 +13,16 @@ class PostBase(BaseModel):
     content: str
     published: bool = True
 
+class PatchBase(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    published: bool = True
 
 class PostCreate(PostBase):
     pass
 
+class Test(PostBase):
+    image_url: Optional[str]
 
 class UserOut(BaseModel):
     id: int
@@ -28,6 +35,7 @@ class UserOut(BaseModel):
 
 class PostResponse(PostBase):
     id: int
+    image_url: Optional[str]
     created_at: datetime
     owner_id: int
     owner: UserOut
@@ -66,3 +74,9 @@ class TokenData(BaseModel):
 class Vote(BaseModel):
     post_id: int
     dir: conint(ge=0, le=1)
+
+
+class Image(BaseModel):
+    id: int
+    name: str
+    image_url: Url
