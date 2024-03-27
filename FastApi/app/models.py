@@ -45,6 +45,6 @@ class Vote(Base):
 class Image(Base):
     __tablename__ = 'images'
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=True)
-    image_url = Column(String, nullable=True)
+    id = Column(Integer, primary_key=True, nullable=False)
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True, nullable=False)
+    image_url = Column(String, nullable=False)
