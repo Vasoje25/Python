@@ -1,7 +1,10 @@
 import os
 from fastapi import FastAPI, File, Response, UploadFile, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict
+
+from alembic import op
+import sqlalchemy as sa
 
 from sqlalchemy import func
 from .. import models, schemas, oauth2, utils
@@ -66,6 +69,69 @@ def create_posts(
         print(e.args)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="post is not created")
+
+
+
+
+
+
+
+
+
+
+#===========================================================================================
+@router.post(
+    "/test/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostResponse
+)
+def create_posts(
+    files: list[UploadFile]= File(None),
+    post: schemas.PostCreate = Depends(),
+    db: Session = Depends(get_db),
+    current_user: int = Depends(oauth2.get_current_user),
+):
+    # print(current_user.id)
+    # print(current_user.email)
+    
+    new_post = models.Post(owner_id=current_user.id, **post.model_dump())
+    db.add(new_post)
+
+    db.commit()
+    # get_post_id = db.query(models.Post).group_by(models.Post.id).order_by(models.Post.id.desc()).first()
+
+    images = sa.sql.table('images',
+        sa.Column('post_id', sa.Integer, nullable=False),
+        sa.Column('image_url', sa.String(), nullable=False),)
+
+
+    for file in files:
+        url=utils.files_write(file,image_folder_path)
+        print("======================================")
+        print(file.filename)
+
+        new_image = models.Image(post_id=new_post.id, image_url=url)
+        #new_image.image_url=url
+
+        new_images = new_image
+
+    image_urls = [{{new_image.post_id}: r[0], {new_image.image_url}: r[1]} for r in new_images]
+    op.bulk_insert(images, image_urls)
+
+
+    db.refresh(new_post)
+        
+    return new_post
+    # except Exception as e:
+    #     print(e.args)
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST, detail="post is not created")
+#===========================================================================================
+#probati resenje sa bulk_insert
+
+
+
+
+
+
 
 
 # get latest post

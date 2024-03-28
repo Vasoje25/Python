@@ -35,7 +35,6 @@ class UserOut(BaseModel):
 
 class PostResponse(PostBase):
     id: int
-    image_url: Optional[str]
     created_at: datetime
     owner_id: int
     owner: UserOut
@@ -78,5 +77,4 @@ class Vote(BaseModel):
 
 class Image(BaseModel):
     id: int
-    name: str
     image_url: Url

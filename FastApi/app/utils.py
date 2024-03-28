@@ -43,3 +43,36 @@ def is_file_type_valid(file: File):
         return False
     else:
         return True
+    
+
+
+
+#==================================================================================================
+#receive and save file
+def files_write(file: File, destination_path: str):
+    
+    url_folder_path="/static/Images/"
+
+
+
+    image_name = str(datetime.now(timezone.utc).now()) + '_' +file.filename
+
+    file_path = f"{destination_path}{image_name}"
+
+    with open(file_path, "wb") as f:
+        f.write(file.file.read())
+        image_location_relative_path= f"{url_folder_path}{image_name}"
+
+    return image_location_relative_path
+
+
+#validation of file
+def is_files_type_valid(file: File):
+    accepted_file_types = ["image/png", "image/jpeg", "image/jpg", "png", "jpeg", "jpg"]
+
+    files_type= file.content_type
+
+    if files_type not in accepted_file_types:
+        return False
+    else:
+        return True
