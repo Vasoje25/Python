@@ -48,3 +48,5 @@ class Image(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True, nullable=False)
     image_url = Column(String, nullable=False)
+
+

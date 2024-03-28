@@ -36,11 +36,22 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.add_column('posts', sa.Column('image_url', sa.String(), nullable=True))
-    posts = sa.sql.table('posts',
-        sa.Column('image_url', sa.String(), nullable=False)
-    )
     conn = op.get_bind()
-    res = conn.execute("SELECT post_id, image_url FROM images")
-    results = res.fetchall()
-    images = [{'post_id': r[0],'image_url': r[1]} for r in results]
-    op.bulk_insert(posts, images)
+    conn.execute("""
+        UPDATE posts
+            SET image_url = (
+                SELECT image_url FROM images WHERE posts.id = images.post_id
+        )""")
+    conn.execute("""DELETE FROM images""")
+
+
+# def downgrade() -> None:
+#     op.add_column('posts', sa.Column('image_url', sa.String(), nullable=True))
+#     posts = sa.sql.table('posts',
+#         sa.Column('image_url', sa.String(), nullable=False)
+#     )
+#     conn = op.get_bind()
+#     res = conn.execute("SELECT post_id, image_url FROM images")
+#     results = res.fetchall()
+#     for r in results:
+#         conn.execute(f"UPDATE posts SET image_url ={r[1]} WHERE id = {r[0]}")

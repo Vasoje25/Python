@@ -46,11 +46,11 @@ def create_posts(
     url=None
     #check if file exist and format of it
     if file:
-            if utils.is_file_type_valid(file) == True:
-                url=utils.file_write(file,image_folder_path)
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported media!")
+        if utils.is_file_type_valid(file) == True:
+            url=utils.file_write(file,image_folder_path)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported media!")
             
     #write data in data base
     try:                   
